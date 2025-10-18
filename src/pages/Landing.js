@@ -1,16 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Box,
-  Button,
-  MenuItem,
-  Select,
-  Typography,
-  FormControl,
-  InputLabel,
-  CircularProgress,
-} from "@mui/material";
-import axios from "axios";
+import api from "../api"; // axios instance
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -18,36 +8,33 @@ export default function Landing() {
   const [cities, setCities] = useState([]);
   const [selectedState, setSelectedState] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // Fetch states from API
     const fetchStates = async () => {
-      setLoading(true);
       try {
-        const res = await axios.get("https://meddata-backend.onrender.com/states");
+        const res = await api.get("/states");
         setStates(res.data || []);
       } catch (err) {
         console.error(err);
-      } finally {
-        setLoading(false);
       }
     };
     fetchStates();
   }, []);
 
   useEffect(() => {
-    if (!selectedState) return;
+    if (!selectedState) {
+      setCities([]);
+      setSelectedCity("");
+      return;
+    }
+    // Fetch cities for selected state
     const fetchCities = async () => {
-      setLoading(true);
       try {
-        const res = await axios.get(
-          `https://meddata-backend.onrender.com/cities?state=${selectedState}`
-        );
+        const res = await api.get(`/cities?state=${selectedState}`);
         setCities(res.data || []);
       } catch (err) {
         console.error(err);
-      } finally {
-        setLoading(false);
       }
     };
     fetchCities();
@@ -62,56 +49,38 @@ export default function Landing() {
   };
 
   return (
-    <Box sx={{ textAlign: "center", p: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Search Medical Centers
-      </Typography>
+    <div style={{ textAlign: "center", padding: "2rem" }}>
+      <h1>Search Medical Centers</h1>
 
-      {loading && <CircularProgress sx={{ my: 2 }} />}
+      <div id="state" style={{ margin: "1rem" }}>
+        <select
+          value={selectedState}
+          onChange={(e) => {
+            setSelectedState(e.target.value);
+            setSelectedCity("");
+          }}
+        >
+          <option value="">Select State</option>
+          {states.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+      </div>
 
-      <Box sx={{ display: "flex", justifyContent: "center", gap: 3, mt: 3 }}>
-        <div id="state">
-          <FormControl sx={{ minWidth: 180 }}>
-            <InputLabel>State</InputLabel>
-            <Select
-              value={selectedState}
-              label="State"
-              onChange={(e) => {
-                setSelectedState(e.target.value);
-                setSelectedCity("");
-              }}
-            >
-              {states.map((state) => (
-                <MenuItem key={state} value={state}>
-                  {state}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </div>
+      <div id="city" style={{ margin: "1rem" }}>
+        <select
+          value={selectedCity}
+          disabled={!selectedState}
+          onChange={(e) => setSelectedCity(e.target.value)}
+        >
+          <option value="">Select City</option>
+          {cities.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+      </div>
 
-        <div id="city">
-          <FormControl sx={{ minWidth: 180 }}>
-            <InputLabel>City</InputLabel>
-            <Select
-              value={selectedCity}
-              label="City"
-              onChange={(e) => setSelectedCity(e.target.value)}
-              disabled={!selectedState}
-            >
-              {cities.map((city) => (
-                <MenuItem key={city} value={city}>
-                  {city}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </div>
-
-        <Button id="searchBtn" variant="contained" onClick={handleSearch}>
-          Search
-        </Button>
-      </Box>
-    </Box>
+      <button id="searchBtn" onClick={handleSearch}>Search</button>
+    </div>
   );
 }
