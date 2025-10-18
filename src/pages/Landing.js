@@ -1,125 +1,97 @@
-// src/pages/Landing.js
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Container,
-  Typography,
   Box,
   Button,
+  MenuItem,
+  Select,
+  Typography,
   FormControl,
   InputLabel,
-  Select,
-  MenuItem,
-  CircularProgress,
 } from "@mui/material";
-import api from "../api";
+
+const STATES = [
+  "Alabama",
+  "Alaska",
+  "Arizona",
+  "Arkansas",
+  "California",
+  "Colorado",
+];
+
+const CITIES = {
+  Alabama: ["DOTHAN", "MOBILE", "MONTGOMERY"],
+  Alaska: ["ANCHORAGE", "FAIRBANKS"],
+  Arizona: ["PHOENIX", "TUCSON"],
+  Arkansas: ["LITTLE ROCK", "FAYETTEVILLE"],
+  California: ["LOS ANGELES", "SAN FRANCISCO"],
+  Colorado: ["DENVER", "BOULDER"],
+};
 
 export default function Landing() {
-  const [states, setStates] = useState([]);
-  const [cities, setCities] = useState([]);
+  const navigate = useNavigate();
   const [selectedState, setSelectedState] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-
-  // Fetch states
-  useEffect(() => {
-    const fetchStates = async () => {
-      try {
-        const response = await api.get("/states");
-        setStates(response.data || []);
-      } catch (error) {
-        console.error("Error fetching states", error);
-      }
-    };
-    fetchStates();
-  }, []);
-
-  // Fetch cities based on state
-  useEffect(() => {
-    if (!selectedState) return;
-    const fetchCities = async () => {
-      setLoading(true);
-      try {
-        const response = await api.get(`/cities/${selectedState}`);
-        setCities(response.data || []);
-      } catch (error) {
-        console.error("Error fetching cities", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCities();
-  }, [selectedState]);
 
   const handleSearch = () => {
-    if (!selectedState || !selectedCity) return alert("Select both state and city");
+    if (!selectedState || !selectedCity) {
+      alert("Please select both state and city");
+      return;
+    }
     navigate(`/results?state=${selectedState}&city=${selectedCity}`);
   };
 
   return (
-    <Container sx={{ mt: 5, textAlign: "center" }}>
+    <Box sx={{ textAlign: "center", p: 4 }}>
       <Typography variant="h4" gutterBottom>
-        Find Medical Centers
+        Search Medical Centers
       </Typography>
 
-      <Box
-        display="flex"
-        flexDirection={{ xs: "column", md: "row" }}
-        justifyContent="center"
-        alignItems="center"
-        gap={2}
-        mt={4}
-      >
-        {/* State Dropdown */}
-        <FormControl sx={{ minWidth: 200 }} id="state">
-          <InputLabel>State</InputLabel>
-          <Select
-            value={selectedState}
-            onChange={(e) => setSelectedState(e.target.value)}
-            label="State"
-          >
-            {states.map((s) => (
-              <MenuItem key={s} value={s}>
-                {s}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        {/* City Dropdown */}
-        <FormControl sx={{ minWidth: 200 }} id="city" disabled={!selectedState || loading}>
-          <InputLabel>City</InputLabel>
-          <Select
-            value={selectedCity}
-            onChange={(e) => setSelectedCity(e.target.value)}
-            label="City"
-          >
-            {loading ? (
-              <MenuItem disabled>
-                <CircularProgress size={20} />
-              </MenuItem>
-            ) : (
-              cities.map((c) => (
-                <MenuItem key={c} value={c}>
-                  {c}
+      <Box sx={{ display: "flex", justifyContent: "center", gap: 3, mt: 3 }}>
+        {/* State dropdown */}
+        <div id="state">
+          <FormControl sx={{ minWidth: 180 }}>
+            <InputLabel>State</InputLabel>
+            <Select
+              value={selectedState}
+              label="State"
+              onChange={(e) => {
+                setSelectedState(e.target.value);
+                setSelectedCity(""); // Reset city when state changes
+              }}
+            >
+              {STATES.map((state) => (
+                <MenuItem key={state} value={state}>
+                  {state}
                 </MenuItem>
-              ))
-            )}
-          </Select>
-        </FormControl>
+              ))}
+            </Select>
+          </FormControl>
+        </div>
 
-        {/* Search Button */}
-        <Button
-          id="searchBtn"
-          variant="contained"
-          color="primary"
-          sx={{ height: "56px" }}
-          onClick={handleSearch}
-        >
+        {/* City dropdown */}
+        <div id="city">
+          <FormControl sx={{ minWidth: 180 }}>
+            <InputLabel>City</InputLabel>
+            <Select
+              value={selectedCity}
+              label="City"
+              onChange={(e) => setSelectedCity(e.target.value)}
+              disabled={!selectedState}
+            >
+              {(CITIES[selectedState] || []).map((city) => (
+                <MenuItem key={city} value={city}>
+                  {city}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </div>
+
+        <Button id="searchBtn" variant="contained" onClick={handleSearch}>
           Search
         </Button>
       </Box>
-    </Container>
+    </Box>
   );
 }
