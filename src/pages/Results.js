@@ -9,6 +9,9 @@ import {
   Button,
   CircularProgress,
   Box,
+  MenuItem,
+  Select,
+  FormControl,
 } from "@mui/material";
 import api from "../api";
 
@@ -22,7 +25,19 @@ export default function Results() {
   const city = searchParams.get("city") || "";
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [bookingIndex, setBookingIndex] = useState(null);
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedTime, setSelectedTime] = useState("Morning");
   const navigate = useNavigate();
+
+  const times = ["Morning", "Afternoon", "Evening"];
+
+  // Generate next 7 days for date selection
+  const next7Days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    return d.toISOString().split("T")[0]; // yyyy-mm-dd
+  });
 
   useEffect(() => {
     if (!state || !city) return;
@@ -30,10 +45,10 @@ export default function Results() {
       try {
         setLoading(true);
         const url = `/data?state=${encodeURIComponent(state)}&city=${encodeURIComponent(city)}`;
-        const response = await api.get(url);
-        setData(response.data || []);
-      } catch (error) {
-        console.error(error);
+        const res = await api.get(url);
+        setData(res.data || []);
+      } catch (err) {
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -41,12 +56,27 @@ export default function Results() {
     fetchData();
   }, [state, city]);
 
-  const handleBook = (center) => {
-    navigate("/my-bookings", { state: { from: "results", preselect: center } });
+  const handleBookClick = (index) => {
+    setBookingIndex(index);
+    setSelectedDate("");
+    setSelectedTime("Morning");
+  };
+
+  const handleConfirmBooking = (center) => {
+    if (!selectedDate) {
+      alert("Please select a date");
+      return;
+    }
+    const booking = {
+      ...center,
+      bookingDate: selectedDate,
+      bookingTime: selectedTime,
+    };
+    navigate("/my-bookings", { state: { from: "results", preselect: booking } });
   };
 
   return (
-    <Box>
+    <Box sx={{ p: 2 }}>
       <Typography variant="h5" gutterBottom>
         {data.length} medical centers found in {city}
       </Typography>
@@ -55,7 +85,7 @@ export default function Results() {
         <CircularProgress />
       ) : (
         <Grid container spacing={3}>
-          {data.map((center) => (
+          {data.map((center, index) => (
             <Grid item xs={12} sm={6} md={4} key={buildUniqueKey(center)}>
               <Card elevation={3}>
                 <CardContent>
@@ -69,11 +99,51 @@ export default function Results() {
                   <Typography variant="body2" sx={{ mt: 1 }}>
                     Rating: {center["Overall Rating"] ?? "N/A"}
                   </Typography>
+
+                  {bookingIndex === index && (
+                    <Box sx={{ mt: 2 }}>
+                      <FormControl fullWidth sx={{ mb: 1 }}>
+                        <Select
+                          value={selectedDate}
+                          onChange={(e) => setSelectedDate(e.target.value)}
+                          displayEmpty
+                        >
+                          <MenuItem value="" disabled>
+                            Select Date
+                          </MenuItem>
+                          {next7Days.map((d) => (
+                            <MenuItem key={d} value={d}>
+                              {d}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+
+                      <FormControl fullWidth sx={{ mb: 1 }}>
+                        <Select
+                          value={selectedTime}
+                          onChange={(e) => setSelectedTime(e.target.value)}
+                        >
+                          {times.map((t) => (
+                            <MenuItem key={t} value={t}>
+                              {t}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+
+                      <Button fullWidth variant="contained" onClick={() => handleConfirmBooking(center)}>
+                        Confirm Booking
+                      </Button>
+                    </Box>
+                  )}
                 </CardContent>
                 <CardActions>
-                  <Button fullWidth variant="contained" onClick={() => handleBook(center)}>
-                    Book FREE Visit
-                  </Button>
+                  {bookingIndex !== index && (
+                    <Button fullWidth variant="contained" onClick={() => handleBookClick(index)}>
+                      Book FREE Visit
+                    </Button>
+                  )}
                 </CardActions>
               </Card>
             </Grid>

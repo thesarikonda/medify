@@ -14,13 +14,11 @@ export default function MyBookings() {
   const location = useLocation();
   const [bookings, setBookings] = useState([]);
 
-  // Load existing bookings on mount
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("myBookings") || "[]");
     setBookings(stored);
   }, []);
 
-  // Add preselected booking (from Results.js)
   useEffect(() => {
     if (location.state?.from === "results" && location.state?.preselect) {
       const newBooking = location.state.preselect;
@@ -39,7 +37,7 @@ export default function MyBookings() {
   };
 
   return (
-    <Box>
+    <Box sx={{ p: 2 }}>
       <Typography variant="h5" gutterBottom>
         My Bookings
       </Typography>
@@ -61,8 +59,11 @@ export default function MyBookings() {
                   <Typography variant="body2">
                     {center.City}, {center.State} - {center["ZIP Code"]}
                   </Typography>
-                  <Typography variant="body2" sx={{ mt: 1 }}>
-                    Rating: {center["Overall Rating"] ?? "N/A"}
+                  <Typography variant="body2">
+                    Booking Date: {center.bookingDate}
+                  </Typography>
+                  <Typography variant="body2">
+                    Time: {center.bookingTime}
                   </Typography>
                 </CardContent>
                 <CardActions>
